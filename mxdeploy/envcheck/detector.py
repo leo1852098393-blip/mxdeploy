@@ -86,23 +86,21 @@ def check_mx_smi() -> tuple[str, int, int, str]:
     # 解析 GPU 型号与数量
     model = "MetaX GPU"
     count = 0
-    lines = out.splitlines()
-    for line in lines:
-        if "C500" in line or "曦云" in line:
-            model = "曦云 C500"
+    for line in out.splitlines():
+        if "C500" in line or "MXC500" in line or "曦云" in line:
+            if "MetaX" in line or "C500" in line or "MXC500" in line:
+                model = "曦云 C500"
             count += 1
     if count == 0:
-        count = max(1, len([l for l in lines if "GPU" in l and "%" in l]))
-    # 显存：尝试 --show-memory
+        count = max(1, len([l for l in out.splitlines() if "GPU" in l and "%" in l]))
+    # 显存：--show-memory 输出为 KB，解析 vram total
     _, mem_out = _run_cmd(["mx-smi", "--show-memory"])
     memory_mb = 0
     for line in mem_out.splitlines():
-        # 尝试匹配形如 "Memory Usage: 1234 MiB / 65536 MiB" 或 "xxx MiB"
-        if "MiB" in line:
-            parts = line.replace(",", "").split()
-            for i, p in enumerate(parts):
-                if p == "MiB" and i > 0 and parts[i - 1].isdigit():
-                    memory_mb = max(memory_mb, int(parts[i - 1]))
+        if "vram total" in line and "KB" in line:
+            for tok in line.split():
+                if tok.isdigit():
+                    memory_mb = max(memory_mb, int(tok) // 1024)
     return model, count, memory_mb, f"mx-smi OK (detected {count} GPU)"
 
 
@@ -139,6 +137,14 @@ def check_torch() -> CheckResult:
 
 
 def check_vllm() -> CheckResult:
+    # 沐曦适配包是 vllm_metax（主 vllm 包版本号不带 +maca 标记）
+    try:
+        import importlib.util
+
+        if importlib.util.find_spec("vllm_metax") is not None:
+            return CheckResult("vllm", STATUS_OK, "vllm_metax 已安装（沐曦适配版）", "MACA-vLLM 适配包")
+    except Exception:
+        pass
     try:
         import vllm
 
@@ -148,12 +154,20 @@ def check_vllm() -> CheckResult:
             return CheckResult("vllm", STATUS_OK, detail, "沐曦适配版")
         return CheckResult(
             "vllm", STATUS_WARN, detail,
-            "未检测到 +maca 标记，若在沐曦环境请使用 MACA-vLLM 适配版",
+            "未检测到 vllm_metax/+maca，若在沐曦环境请安装 MACA-vLLM 适配版",
         )
     except ImportError:
+        # vllm 导入失败：优先提示 MACA_PATH 环境变量问题（国产 GPU 高频坑）
+        import os
+
+        if os.getenv("MACA_PATH") is None:
+            return CheckResult(
+                "vllm", STATUS_ERROR, "vllm 导入失败且 MACA_PATH 未设置",
+                "export MACA_PATH=/opt/maca（triton metax 后端依赖此变量）",
+            )
         return CheckResult(
-            "vllm", STATUS_WARN, "vllm 未安装",
-            "部署大模型需要 MACA-vLLM（版本含 +maca）",
+            "vllm", STATUS_WARN, "vllm 未安装或导入失败",
+            "部署大模型需要 MACA-vLLM（vllm_metax）",
         )
 
 
