@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mxdeploy"
+version = "0.1.0"
+description = "国产 GPU (MetaX 曦云 C500 / MXMACA) 一键部署 + 评测 + AI 排障 CLI 工具"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Leo77", email = "leo1852098393@gmail.com" }]
+keywords = ["gpu", "metax", "mxmaca", "deploy", "vllm", "benchmark", "国产算力"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: System :: Hardware",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.scripts]
+mxdeploy = "mxdeploy.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["mxdeploy*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
