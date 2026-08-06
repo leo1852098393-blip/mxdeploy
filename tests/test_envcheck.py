@@ -25,17 +25,18 @@ class TestCheckMxSmi:
 
     def test_mx_smi_detects_c500(self):
         fake_out = "GPU 0: MetaX 曦云 C500 | Usage: 42%\nGPU 1: MetaX 曦云 C500 | Usage: 10%\n"
+        mem_out = "vram total: 67108864 KB\nvram used: 846384 KB\n"
         with mock.patch("shutil.which", return_value="/usr/bin/mx-smi"), mock.patch(
             "mxdeploy.envcheck.detector._run_cmd"
         ) as mock_run:
             mock_run.side_effect = [
                 (0, fake_out),  # --show-usage
-                (0, "Memory Usage: 1234 MiB / 65536 MiB"),  # --show-memory
+                (0, mem_out),  # --show-memory
             ]
             model, count, mem, detail = check_mx_smi()
             assert model == "曦云 C500"
             assert count == 2
-            assert mem == 65536
+            assert mem == 65536  # 67108864 KB // 1024
 
     def test_mx_smi_failure(self):
         with mock.patch("shutil.which", return_value="/usr/bin/mx-smi"), mock.patch(
@@ -83,10 +84,14 @@ class TestCheckVllm:
             result = check_vllm()
             assert result.status == STATUS_OK
 
-    def test_no_vllm(self):
-        with mock.patch.dict("sys.modules", {"vllm": None}):
+    def test_no_vllm_no_maca_path(self):
+        # 无 vllm 且 MACA_PATH 未设置 → ERROR（可诊断的高频坑）
+        with mock.patch.dict("sys.modules", {"vllm": None}), mock.patch(
+            "os.getenv", return_value=None
+        ):
             result = check_vllm()
-            assert result.status == STATUS_WARN
+            assert result.status == STATUS_ERROR
+            assert "MACA_PATH" in result.hint
 
 
 class TestRunAll:
