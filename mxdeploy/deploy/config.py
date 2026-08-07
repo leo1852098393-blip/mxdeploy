@@ -35,9 +35,11 @@ class DeployConfig:
     precision: str
     quantization: Optional[str]
     port: int = 8000
-    gpu_memory_utilization: float = 0.9
+    gpu_memory_utilization: float = 0.8
     max_model_len: int = 8192
     tensor_parallel: int = 1
+    enforce_eager: bool = False
+    trust_remote_code: bool = False
     extra_args: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -60,6 +62,12 @@ class DeployConfig:
         ]
         if self.quantization:
             cmd += ["--quantization", self.quantization]
+        if self.enforce_eager:
+            # 跳过 torch.compile：大模型/16G 小显存场景避免编译 OOM
+            cmd += ["--enforce-eager"]
+        if self.trust_remote_code:
+            # GLM 系模型仓库含自定义代码，需显式信任
+            cmd += ["--trust-remote-code"]
         cmd += self.extra_args
         return cmd
 
@@ -106,9 +114,11 @@ def build_config(
     model: str,
     precision: str = "auto",
     port: int = 8000,
-    gpu_memory_utilization: float = 0.9,
+    gpu_memory_utilization: float = 0.8,
     max_model_len: int = 8192,
     extra_args: list[str] | None = None,
+    enforce_eager: bool = False,
+    trust_remote_code: bool = False,
 ) -> DeployConfig:
     """根据模型与显存生成部署配置，含显存预检。"""
     pc = check_precision(model)
@@ -122,18 +132,21 @@ def build_config(
         gpu_memory_utilization=gpu_memory_utilization,
         max_model_len=max_model_len,
         extra_args=extra_args or [],
+        enforce_eager=enforce_eager,
+        trust_remote_code=trust_remote_code,
         warnings=warnings,
     )
 
     params_b = estimate_params(model)
 
-    # 精度参数 → quantization
+    # 精度参数 → quantization（含 GPTQ-Int4 自动识别）
     if precision == "auto":
+        lowered = model.lower()
         if pc.is_fp8:
             config.quantization = None  # 反正部署会失败，留给用户换模型
-        elif "int8" in model.lower():
+        elif "int8" in lowered or ("gptq" in lowered and "int4" in lowered):
             config.quantization = "gptq"
-        elif "awq" in model.lower():
+        elif "awq" in lowered:
             config.quantization = "awq"
     elif precision in ("int8", "int4"):
         config.quantization = "gptq"

@@ -117,67 +117,97 @@ def deploy(
     timeout: int,
     python_bin: Optional[str] = None,
     extra_args: list[str] | None = None,
+    enforce_eager: bool = False,
+    trust_remote_code: bool = False,
+    quantization: Optional[str] = None,
 ) -> DeployResult:
-    """执行部署流程：预检 → 生成配置 → 启动 → 健康检查。"""
+    """执行部署流程：预检 → 生成配置 → 启动 → 健康检查（含 OOM 自动降级重试）。"""
     from mxdeploy.deploy.config import build_config
 
     console.print(f"[bold]部署模型:[/] {model}")
-    config = build_config(
-        model=model,
-        precision=precision,
-        port=port,
-        gpu_memory_utilization=gpu_memory_utilization,
-        max_model_len=max_model_len,
-        extra_args=extra_args,
-    )
 
-    # 打印预检警告
-    if config.warnings:
-        for w in config.warnings:
-            console.print(f"[yellow]⚠ {w}[/]")
-
-    pc = config.warnings and any("FP8" in w for w in config.warnings)
-    if pc:
-        console.print("[bold red]✗ 模型精度不被支持，部署中止[/]")
-        return DeployResult(success=False, model=model, port=port, message="FP8 模型不受支持")
-
-    # 打印将要执行的命令
-    if python_bin is None:
-        python_bin = sys.executable
-    cmd = config.to_command(python_bin=python_bin)
-    console.print("[bold cyan]启动命令:[/]")
-    console.print("  " + " ".join(cmd))
-
-    if no_launch:
-        console.print("[yellow]--no-launch 模式，仅生成配置，不实际启动[/]")
-        return DeployResult(
-            success=True, model=model, port=port, message="配置已生成（未启动）"
+    # OOM 自动降级：启动失败且日志含显存不足时，逐步降低显存利用率重试
+    max_attempts = 3
+    attempt = 0
+    while attempt < max_attempts:
+        config = build_config(
+            model=model,
+            precision=precision,
+            port=port,
+            gpu_memory_utilization=gpu_memory_utilization,
+            max_model_len=max_model_len,
+            extra_args=extra_args,
+            enforce_eager=enforce_eager,
+            trust_remote_code=trust_remote_code,
         )
+        # 显式 --quantization 覆盖自动检测
+        if quantization:
+            config.quantization = quantization
 
-    deployer = VLLMDeployer(cmd=cmd, port=port, health_timeout=timeout)
-    deployer.start()
-    try:
-        health = deployer.wait_healthy()
-    except (RuntimeError, TimeoutError) as e:
-        console.print(f"[bold red]✗ 部署失败[/]\n{e}")
+        # 打印预检警告
+        if config.warnings:
+            for w in config.warnings:
+                console.print(f"[yellow]⚠ {w}[/]")
+
+        pc = config.warnings and any("FP8" in w for w in config.warnings)
+        if pc:
+            console.print("[bold red]✗ 模型精度不被支持，部署中止[/]")
+            return DeployResult(success=False, model=model, port=port, message="FP8 模型不受支持")
+
+        # 打印将要执行的命令
+        if python_bin is None:
+            python_bin = sys.executable
+        cmd = config.to_command(python_bin=python_bin)
+        console.print("[bold cyan]启动命令:[/]")
+        console.print("  " + " ".join(cmd))
+
+        if no_launch:
+            console.print("[yellow]--no-launch 模式，仅生成配置，不实际启动[/]")
+            return DeployResult(
+                success=True, model=model, port=port, message="配置已生成（未启动）"
+            )
+
+        deployer = VLLMDeployer(cmd=cmd, port=port, health_timeout=timeout)
+        deployer.start()
+        try:
+            health = deployer.wait_healthy()
+        except RuntimeError as e:
+            err_text = str(e).lower()
+            if "out of memory" in err_text and gpu_memory_utilization > 0.6:
+                gpu_memory_utilization = round(gpu_memory_utilization - 0.05, 2)
+                attempt += 1
+                console.print(
+                    f"[yellow]⚠ 检测到显存不足，降低显存利用率至 {gpu_memory_utilization} 重试 ({attempt}/{max_attempts})[/]"
+                )
+                continue
+            console.print(f"[bold red]✗ 部署失败[/]\n{e}")
+            return DeployResult(
+                success=False, model=model, port=port, logfile=deployer.logfile, message=str(e)
+            )
+        except TimeoutError as e:
+            console.print(f"[bold red]✗ 部署超时[/]\n{e}")
+            return DeployResult(
+                success=False, model=model, port=port, logfile=deployer.logfile, message=str(e)
+            )
+
+        models = deployer.fetch_models()
+        console.print(f"[bold green]✓ 服务就绪[/] http://127.0.0.1:{port}")
+        if models and "error" not in models[0]:
+            for m in models:
+                console.print(f"  [cyan]模型:[/] {m.get('id', '?')}")
+        else:
+            console.print(f"  [yellow]模型列表:[/] {models}")
+
         return DeployResult(
-            success=False, model=model, port=port, logfile=deployer.logfile, message=str(e)
+            success=True,
+            model=model,
+            port=port,
+            pid=deployer.proc.pid if deployer.proc else None,
+            logfile=deployer.logfile,
+            health=health,
+            message="部署成功",
         )
-
-    models = deployer.fetch_models()
-    console.print(f"[bold green]✓ 服务就绪[/] http://127.0.0.1:{port}")
-    if models and "error" not in models[0]:
-        for m in models:
-            console.print(f"  [cyan]模型:[/] {m.get('id', '?')}")
-    else:
-        console.print(f"  [yellow]模型列表:[/] {models}")
 
     return DeployResult(
-        success=True,
-        model=model,
-        port=port,
-        pid=deployer.proc.pid if deployer.proc else None,
-        logfile=deployer.logfile,
-        health=health,
-        message="部署成功",
+        success=False, model=model, port=port, message="多次尝试后仍显存不足，请换量化模型或增大显存"
     )

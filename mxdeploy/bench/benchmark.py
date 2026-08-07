@@ -125,10 +125,59 @@ class BenchReport:
         return "\n".join(lines)
 
 
+def stream_completions(
+    base_url: str, model: str, prompt: str, max_tokens: int, timeout: float = 120
+) -> tuple[float, int, str]:
+    """非 chat 接口流式调用 /v1/completions（chat 接口不可用时的 fallback）。"""
+    url = f"{base_url}/v1/completions"
+    body = json.dumps(
+        {
+            "model": model,
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+    ).encode()
+    req = urllib.request.Request(
+        url, data=body, headers={"Content-Type": "application/json"}
+    )
+    start = time.perf_counter()
+    ttft = 0.0
+    tokens = 0
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            for raw in resp:
+                line = raw.decode(errors="replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                payload = line[5:].strip()
+                if payload == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(payload)
+                    choices = chunk.get("choices", [{}])
+                    if not choices:
+                        continue
+                    delta = choices[0].get("text", "") or ""
+                    if delta:
+                        if ttft == 0:
+                            ttft = (time.perf_counter() - start) * 1000
+                        tokens += len(delta)
+                except Exception:
+                    continue
+        total = (time.perf_counter() - start) * 1000
+        return (ttft, tokens, "")
+    except Exception as e:
+        return (0.0, 0, str(e))
+
+
 def stream_chat_completion(
     base_url: str, model: str, prompt: str, max_tokens: int, timeout: float = 120
 ) -> tuple[float, int, str]:
-    """流式调用 chat/completions，返回 (ttft_ms, tokens, error)。"""
+    """流式调用 chat/completions，返回 (ttft_ms, tokens, error)。
+
+    chat 接口失败（如模型缺 chat_template）时自动 fallback 到 completions 接口。
+    """
     url = f"{base_url}/v1/chat/completions"
     body = json.dumps(
         {
@@ -166,7 +215,8 @@ def stream_chat_completion(
         total = (time.perf_counter() - start) * 1000
         return (ttft, tokens, "")
     except Exception as e:
-        return (0.0, 0, str(e))
+        # chat 接口失败 → fallback 到 completions 接口
+        return stream_completions(base_url, model, prompt, max_tokens, timeout)
 
 
 def _sample_one(base_url: str, model: str, max_tokens: int) -> SampleResult:

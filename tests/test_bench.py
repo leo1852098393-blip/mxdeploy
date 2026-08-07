@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import urllib.error
 from unittest import mock
 
 from mxdeploy.bench.benchmark import (
@@ -44,6 +45,54 @@ class TestStreamChatCompletion:
             ttft, tokens, err = stream_chat_completion("http://x:8000", "m", "hi", 100)
             assert err != ""
             assert tokens == 0
+
+
+class TestChatFallback:
+    """v0.2：chat 接口失败自动 fallback 到 completions 接口。"""
+
+    def test_fallback_to_completions(self):
+        comp_chunks = [
+            'data: {"choices":[{"text":"好"}]}\n\n',
+            "data: [DONE]\n\n",
+        ]
+        calls = []
+
+        def fake_urlopen(req, *a, **kw):
+            calls.append(req.full_url)
+            if "chat/completions" in req.full_url:
+                raise urllib.error.HTTPError(req.full_url, 400, "Bad Request", {}, None)
+            return mock.Mock(
+                __enter__=lambda s: s,
+                __exit__=lambda *a: False,
+                __iter__=lambda s: iter(_fake_stream_response(comp_chunks)),
+            )
+
+        with mock.patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            ttft, tokens, err = stream_chat_completion("http://x:8000", "m", "hi", 100)
+            assert err == ""
+            assert tokens == 1
+            assert any("/v1/completions" in u for u in calls)
+
+    def test_chat_ok_no_fallback(self):
+        chat_chunks = [
+            'data: {"choices":[{"delta":{"content":"你"}}]}\n\n',
+            "data: [DONE]\n\n",
+        ]
+        calls = []
+
+        def fake_urlopen(req, *a, **kw):
+            calls.append(req.full_url)
+            return mock.Mock(
+                __enter__=lambda s: s,
+                __exit__=lambda *a: False,
+                __iter__=lambda s: iter(_fake_stream_response(chat_chunks)),
+            )
+
+        with mock.patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            ttft, tokens, err = stream_chat_completion("http://x:8000", "m", "hi", 100)
+            assert err == ""
+            assert tokens == 1
+            assert not any("/v1/completions" in u for u in calls)
 
 
 class TestBenchReport:

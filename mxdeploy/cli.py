@@ -18,7 +18,7 @@ from mxdeploy.doctor import doctor
 
 app = typer.Typer(
     name="mxdeploy",
-    help="国产 GPU (MetaX 曦云 C500 / MXMACA) 一键部署 + 评测 + AI 排障工具",
+    help="国产 GPU (曦云 C500 / MXMACA) 一键部署 + 评测 + AI 排障工具",
     add_completion=False,
     no_args_is_help=True,
 )

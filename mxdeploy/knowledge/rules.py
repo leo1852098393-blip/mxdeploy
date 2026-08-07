@@ -1,7 +1,7 @@
 """排障知识库：国产 GPU（曦云 C500 / MXMACA）高频问题规则。
 
 每条规则包含：匹配模式、问题定位、修复建议。
-素材来源：模力方舟 16G C500 实例真实踩坑记录（2026-08-06）。
+素材来源：国产算力平台 16G C500 实例真实踩坑记录（2026-08-06）。
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ class Diagnosis:
 
 
 # ============================================================
-# 知识库：全部来自真实环境实测（模力方舟曦云 C500）
+# 知识库：全部来自真实环境实测（国产算力平台曦云 C500）
 # ============================================================
 
 KNOWLEDGE_BASE: list[KnowledgeEntry] = [
@@ -74,7 +74,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             r"MACA_PATH",
         ],
         diagnosis=(
-            "vllm/triton 的 metax 后端通过环境变量 MACA_PATH 定位沐曦 SDK，"
+            "vllm/triton 的 metax 后端通过环境变量 MACA_PATH 定位国产 GPU SDK，"
             "该变量未设置时 os.path.join 收到 None 直接崩溃。"
             "常见场景：非交互式 SSH 会话不加载 .bashrc，导致 export 未生效。"
         ),
@@ -84,7 +84,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "export MACA_CLANG_PATH=/opt/maca/mxgpu_llvm/bin\n"
             "# 或直接: source /root/.bashrc （交互式 shell）"
         ),
-        evidence="模力方舟 16G C500 实测：非交互 SSH 执行 import vllm 崩溃于 triton/backends/metax/driver.py:30",
+        evidence="国产算力平台 16G C500 实测：非交互 SSH 执行 import vllm 崩溃于 triton/backends/metax/driver.py:30",
     ),
     # ---- 网络类 ----
     KnowledgeEntry(
@@ -104,7 +104,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "export HF_ENDPOINT=https://hf-mirror.com\n"
             "# 或使用 ModelScope 镜像: export VLLM_USE_MODELSCOPE=True"
         ),
-        evidence="模力方舟 16G C500 实测：huggingface.co 超时，设置 HF_ENDPOINT=hf-mirror.com 后正常下载",
+        evidence="国产算力平台 16G C500 实测：huggingface.co 超时，设置 HF_ENDPOINT=hf-mirror.com 后正常下载",
     ),
     # ---- 精度类 ----
     KnowledgeEntry(
@@ -126,7 +126,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "  Qwen/Qwen2.5-7B-Instruct (BF16)\n"
             "  Qwen/Qwen2.5-7B-Instruct-GPTQ-Int8 (INT8)"
         ),
-        evidence="沐曦官方文档明确：C500 暂不支持 FP8；mxdeploy deploy 已内置 FP8 拦截",
+        evidence="官方文档明确：C500 暂不支持 FP8；mxdeploy deploy 已内置 FP8 拦截",
     ),
     # ---- 依赖类 ----
     KnowledgeEntry(
@@ -141,15 +141,15 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             r"AssertionError.*CUDA|CUDA.*not available",
         ],
         diagnosis=(
-            "在沐曦环境执行 pip install/upgrade torch 会从 PyPI 拉取社区公版，"
+            "在国产 GPU 环境执行 pip install/upgrade torch 会从 PyPI 拉取社区公版，"
             "覆盖官方 +metax 适配版，导致无法调用 GPU。"
         ),
         fix=(
             "识别适配版本：pip list | grep -e torch -e metax -e maca（应含 +metax 标记）\n"
-            "恢复方法：从沐曦官方软件中心重新安装适配版 torch（如 2.8.0+metax3.5.3.9）\n"
+            "恢复方法：从官方软件中心重新安装适配版 torch（如 2.8.0+metax3.5.3.9）\n"
             "严禁随意 pip install/upgrade 核心库！"
         ),
-        evidence="沐曦官方文档『严禁随意更新核心库』；模力方舟镜像预装 torch 2.8.0+metax",
+        evidence="官方文档『严禁随意更新核心库』；国产算力平台镜像预装 torch 2.8.0+metax",
     ),
     # ---- 显存类 ----
     KnowledgeEntry(
@@ -194,7 +194,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "2. 设置 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True 减少显存碎片\n"
             "3. 或加 --enforce-eager 跳过 torch.compile（性能略降但更稳）"
         ),
-        evidence="模力方舟 16G vGPU 实测（2026-08-07）：1.5B util 0.9 启动 OOM（Tried to allocate 1.02 GiB, 686 MiB free），util 0.8 成功；7B-INT8 / 3B 同参数验证",
+        evidence="国产算力平台 16G vGPU 实测（2026-08-07）：1.5B util 0.9 启动 OOM（Tried to allocate 1.02 GiB, 686 MiB free），util 0.8 成功；7B-INT8 / 3B 同参数验证",
     ),
     KnowledgeEntry(
         id="MISC-003",
@@ -212,7 +212,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "vLLM 启动参数加 --trust-remote-code；\n"
             "或设置环境变量 HF_HUB_DISABLE_TRUST_REMOTE_CODE=0"
         ),
-        evidence="模力方舟实测（2026-08-07）：GLM-4-9B-GPTQ-Int4 加载报 ValueError，加 --trust-remote-code 后正常",
+        evidence="国产算力平台实测（2026-08-07）：GLM-4-9B-GPTQ-Int4 加载报 ValueError，加 --trust-remote-code 后正常",
     ),
     KnowledgeEntry(
         id="MISC-004",
@@ -232,7 +232,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "huggingface-cli download zai-org/glm-4-9b-chat-hf tokenizer_config.json --local-dir /tmp/glm_tok\n"
             "cp /tmp/glm_tok/tokenizer_config.json <模型目录>/"
         ),
-        evidence="模力方舟实测（2026-08-07）：GLM-4-9B-GPTQ-Int4 bench 全部失败（ChatTemplateResolutionError），覆盖官方 tokenizer_config.json 后 100% 成功",
+        evidence="国产算力平台实测（2026-08-07）：GLM-4-9B-GPTQ-Int4 bench 全部失败（ChatTemplateResolutionError），覆盖官方 tokenizer_config.json 后 100% 成功",
     ),
     KnowledgeEntry(
         id="MEM-003",
@@ -252,7 +252,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "2. 或降低 --gpu-memory-utilization 反而更糟（留给 KV 的空间更少）→ 应适度提高或改小模型\n"
             "3. 或换量化程度更高的模型（INT4 → INT2/GGUF）"
         ),
-        evidence="模力方舟实测（2026-08-07）：14B-INT4 @ max_len 8192 报 KV cache 不足，降至 4096 成功部署",
+        evidence="国产算力平台实测（2026-08-07）：14B-INT4 @ max_len 8192 报 KV cache 不足，降至 4096 成功部署",
     ),
     # ---- 其他 ----
     KnowledgeEntry(
@@ -269,11 +269,11 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "vllm_metax 无法识别其架构。"
         ),
         fix=(
-            "1. 查询沐曦官方模型支持列表确认适配状态\n"
+            "1. 查询官方模型支持列表确认适配状态\n"
             "2. 升级 MACA/vllm_metax 到最新版\n"
             "3. 临时换用同参数量的已知适配架构模型（如 Qwen2.5 系列）"
         ),
-        evidence="模力方舟文档：新模型适配可能需要等待官方 MACA 软件栈更新",
+        evidence="国产算力平台文档：新模型适配可能需要等待官方 MACA 软件栈更新",
     ),
     KnowledgeEntry(
         id="MISC-002",
@@ -290,7 +290,7 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
             "2. 杀旧进程：pkill -f vllm.entrypoints\n"
             "3. 或换端口：mxdeploy deploy --port 8001"
         ),
-        evidence="模力方舟实测：重复部署时旧进程未清理导致端口冲突",
+        evidence="国产算力平台实测：重复部署时旧进程未清理导致端口冲突",
     ),
 ]
 

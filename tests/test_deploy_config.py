@@ -67,3 +67,34 @@ class TestBuildConfig:
     def test_int8_sets_quantization(self):
         cfg = build_config("Qwen/Qwen2.5-7B-Instruct", precision="int8")
         assert cfg.quantization == "gptq"
+
+
+class TestV02Features:
+    """v0.2 新功能测试：参数透传 / 默认 util / GPTQ-Int4 自动识别。"""
+
+    def test_gptq_int4_auto_detected(self):
+        cfg = build_config("Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4")
+        assert cfg.quantization == "gptq"
+
+    def test_glm_gptq_int4_auto_detected(self):
+        cfg = build_config("glm-4-9b-chat-GPTQ-Int4")
+        assert cfg.quantization == "gptq"
+
+    def test_default_util_is_08(self):
+        cfg = build_config("Qwen/Qwen2.5-3B-Instruct")
+        assert cfg.gpu_memory_utilization == 0.8
+
+    def test_enforce_eager_in_command(self):
+        cfg = build_config("Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4", enforce_eager=True)
+        cmd = cfg.to_command()
+        assert "--enforce-eager" in cmd
+
+    def test_trust_remote_code_in_command(self):
+        cfg = build_config("glm-4-9b-chat", trust_remote_code=True)
+        cmd = cfg.to_command()
+        assert "--trust-remote-code" in cmd
+
+    def test_extra_args_passthrough(self):
+        cfg = build_config("Qwen/Qwen2.5-3B-Instruct", extra_args=["--max-num-seqs", "4"])
+        cmd = cfg.to_command()
+        assert "--max-num-seqs" in cmd and "4" in cmd
