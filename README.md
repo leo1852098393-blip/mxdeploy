@@ -51,20 +51,16 @@ mxdeploy doctor deploy.log
 | `mxdeploy doctor <log>` | AI 排障：规则引擎 + LLM 分析 |
 | `mxdeploy version` | 版本信息 |
 
-## 实测数据
+## 实测数据（模力方舟曦云 C500 16G vGPU，统一配置：并发8/请求50/max_tokens 256/util 0.8）
 
-Qwen2.5-3B-Instruct 全精度 FP16 @ 模力方舟曦云 C500 16G vGPU：
+| 模型 | 精度 | 吞吐 (t/s) | TTFT (ms) | TPOT (ms) | 显存 (MB) | 成功率 |
+|------|------|-----------|-----------|-----------|-----------|--------|
+| Qwen2.5-1.5B | FP16 | **204.75** | 38.15 | 4.77 | 13573 | 100% |
+| DeepSeek-R1-Distill-1.5B | FP16 | **200.55** | 34.54 | 4.93 | 13561 | 100% |
+| Qwen2.5-3B | FP16 | **153.65** | 48.21 | 6.40 | 13599 | 100% |
+| Qwen2.5-7B-GPTQ-Int8 | INT8 | **159.21** | 41.67 | 6.15 | 13827 | 100% |
 
-| 指标 | 数值 |
-|------|------|
-| 吞吐 | 160.99 tokens/s |
-| 首token延迟 (TTFT) | 40.85 ms |
-| P95 延迟 | 72.32 ms |
-| 每token延迟 (TPOT) | 6.11 ms |
-| 成功率 | 100% |
-| 显存占用 | 15361 MB / 16G |
-
-完整报告见 [docs/BENCHMARK_3B_C500_16G.md](https://github.com/leo1852098393-blip/mxdeploy/blob/master/docs/BENCHMARK_3B_C500_16G.md)。
+完整矩阵报告见 [docs/BENCHMARK_MATRIX_C500_16G.md](https://github.com/leo1852098393-blip/mxdeploy/blob/master/docs/BENCHMARK_MATRIX_C500_16G.md)。
 
 ## 排障知识库
 
@@ -77,6 +73,7 @@ Qwen2.5-3B-Instruct 全精度 FP16 @ 模力方舟曦云 C500 16G vGPU：
 | PIP-001 | pip 覆盖官方 torch(+metax) 适配版 |
 | FP8-001 | 曦云 C500 不支持 FP8 → 提示换 FP16/INT8 |
 | OOM-001 | 显存不足 → 给出量化/换卡建议 |
+| MEM-002 | util 0.9 + torch.compile autotune OOM → 降 0.8 |
 | ... | 更多规则见 `mxdeploy doctor --list` |
 
 ## 兼容性

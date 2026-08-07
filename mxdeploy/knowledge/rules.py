@@ -174,6 +174,28 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
         ),
         evidence="实测：Qwen2.5-3B FP16 占 15361MB/16G；7B FP16 约 14GB 已接近上限",
     ),
+    KnowledgeEntry(
+        id="MEM-002",
+        title="vLLM 启动 OOM（torch.compile autotune 显存不足）",
+        severity=SEVERITY_WARNING,
+        patterns=[
+            r"Failed to run autotuning code block",
+            r"CUDA out of memory.*autotun",
+            r"InductorError.*out of memory",
+            r"Tried to allocate.*GiB",
+        ],
+        diagnosis=(
+            "vLLM 初始化 KV cache 时的 torch.compile autotune 阶段需要额外约 1G 显存，"
+            "gpu-memory-utilization=0.9 时模型权重+显存探测已接近 vGPU 配额上限，导致 OOM。"
+            "实测：16G vGPU 上 util 0.9 部署 1.5B 失败，util 0.8 成功。"
+        ),
+        fix=(
+            "1. 降低 --gpu-memory-utilization（0.9 → 0.8，16G vGPU 实测安全）\n"
+            "2. 设置 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True 减少显存碎片\n"
+            "3. 或加 --enforce-eager 跳过 torch.compile（性能略降但更稳）"
+        ),
+        evidence="模力方舟 16G vGPU 实测（2026-08-07）：1.5B util 0.9 启动 OOM（Tried to allocate 1.02 GiB, 686 MiB free），util 0.8 成功；7B-INT8 / 3B 同参数验证",
+    ),
     # ---- 其他 ----
     KnowledgeEntry(
         id="MISC-001",

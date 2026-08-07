@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 (2026-08-07)
+
+- 新增知识库规则 MEM-002：vLLM 启动 OOM（torch.compile autotune 显存不足）→ 降 gpu-memory-utilization 至 0.8
+- 多模型实测矩阵：Qwen2.5-1.5B / DeepSeek-R1-Distill-1.5B / Qwen2.5-3B / Qwen2.5-7B-GPTQ-Int8（docs/BENCHMARK_MATRIX_C500_16G.md）
+- 41 项测试全绿
+
 ## 0.1.1 (2026-08-07)
 
 - 修复 README 相对链接（PyPI 渲染失效）→ 改为 GitHub 绝对链接

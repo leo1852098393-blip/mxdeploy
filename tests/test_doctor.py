@@ -33,7 +33,18 @@ class TestDiagnose:
 
     def test_fp8_error(self):
         results = diagnose("FP8 format not supported on this device")
-        assert "PREC-001" in [r.entry.id for r in results]
+        ids = [r.entry.id for r in results]
+        assert "PREC-001" in ids
+
+    def test_autotune_oom(self):
+        log = (
+            "torch._inductor.exc.InductorError: RuntimeError: Failed to run autotuning "
+            "code block: CUDA out of memory. Tried to allocate 1.02 GiB. "
+            "GPU 0 has a total capacity of 15.22 GiB of which 686.00 MiB is free."
+        )
+        results = diagnose(log)
+        ids = [r.entry.id for r in results]
+        assert "MEM-002" in ids
 
     def test_pip_override(self):
         results = diagnose("user ran: pip install torch --upgrade")
