@@ -51,14 +51,16 @@ mxdeploy doctor deploy.log
 | `mxdeploy doctor <log>` | AI 排障：规则引擎 + LLM 分析 |
 | `mxdeploy version` | 版本信息 |
 
-## 实测数据（模力方舟曦云 C500 16G vGPU，统一配置：并发8/请求50/max_tokens 256/util 0.8）
+## 实测数据（模力方舟曦云 C500 16G vGPU，统一：并发8/请求50/max_tokens 256/util 0.8）
 
-| 模型 | 精度 | 吞吐 (t/s) | TTFT (ms) | TPOT (ms) | 显存 (MB) | 成功率 |
-|------|------|-----------|-----------|-----------|-----------|--------|
-| Qwen2.5-1.5B | FP16 | **204.75** | 38.15 | 4.77 | 13573 | 100% |
-| DeepSeek-R1-Distill-1.5B | FP16 | **200.55** | 34.54 | 4.93 | 13561 | 100% |
-| Qwen2.5-3B | FP16 | **153.65** | 48.21 | 6.40 | 13599 | 100% |
-| Qwen2.5-7B-GPTQ-Int8 | INT8 | **159.21** | 41.67 | 6.15 | 13827 | 100% |
+| 模型 | 精度 | 模式 | 吞吐 (t/s) | TTFT (ms) | TPOT (ms) | 成功率 |
+|------|------|------|-----------|-----------|-----------|--------|
+| Qwen2.5-1.5B | FP16 | compile | **204.75** | 38.15 | 4.77 | 100% |
+| DeepSeek-R1-Distill-1.5B | FP16 | compile | **200.55** | 34.54 | 4.93 | 100% |
+| Qwen2.5-3B | FP16 | compile | **153.65** | 48.21 | 6.40 | 100% |
+| Qwen2.5-7B-GPTQ-Int8 | INT8 | compile | **159.21** | 41.67 | 6.15 | 100% |
+| GLM-4-9B-GPTQ-Int4 | INT4 | eager | **90.51** | 45.97 | 10.79 | 100% |
+| Qwen2.5-14B-GPTQ-Int4 | INT4 | eager | **46.58** | 1398.79 | 14.05 | 100% |
 
 完整矩阵报告见 [docs/BENCHMARK_MATRIX_C500_16G.md](https://github.com/leo1852098393-blip/mxdeploy/blob/master/docs/BENCHMARK_MATRIX_C500_16G.md)。
 
@@ -74,6 +76,8 @@ mxdeploy doctor deploy.log
 | FP8-001 | 曦云 C500 不支持 FP8 → 提示换 FP16/INT8 |
 | OOM-001 | 显存不足 → 给出量化/换卡建议 |
 | MEM-002 | util 0.9 + torch.compile autotune OOM → 降 0.8 |
+| MISC-003 | 模型需 trust-remote-code → 加 `--trust-remote-code` |
+| MISC-004 | 量化版缺 chat_template → 从官方仓库补齐 tokenizer |
 | ... | 更多规则见 `mxdeploy doctor --list` |
 
 ## 兼容性

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3 (2026-08-07)
+
+- 新增知识库规则：MISC-003（trust-remote-code）、MISC-004（chat_template 缺失）、MEM-003（KV cache 不足）
+- 实测矩阵扩展至 6 模型：新增 GLM-4-9B-GPTQ-Int4（90.51 t/s）、Qwen2.5-14B-GPTQ-Int4（46.58 t/s）
+- 44 项测试全绿
+
 ## 0.1.2 (2026-08-07)
 
 - 新增知识库规则 MEM-002：vLLM 启动 OOM（torch.compile autotune 显存不足）→ 降 gpu-memory-utilization 至 0.8

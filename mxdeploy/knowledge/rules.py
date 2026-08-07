@@ -196,6 +196,64 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
         ),
         evidence="模力方舟 16G vGPU 实测（2026-08-07）：1.5B util 0.9 启动 OOM（Tried to allocate 1.02 GiB, 686 MiB free），util 0.8 成功；7B-INT8 / 3B 同参数验证",
     ),
+    KnowledgeEntry(
+        id="MISC-003",
+        title="模型仓库含自定义代码需 trust-remote-code（如 GLM 系）",
+        severity=SEVERITY_WARNING,
+        patterns=[
+            r"contains custom code which must be executed",
+            r"trust_remote_code.*True",
+            r"Please pass the argument.*trust_remote_code",
+        ],
+        diagnosis=(
+            "模型仓库（如 GLM 系）带自定义建模代码，transformers/vLLM 需要显式信任执行才能加载。"
+        ),
+        fix=(
+            "vLLM 启动参数加 --trust-remote-code；\n"
+            "或设置环境变量 HF_HUB_DISABLE_TRUST_REMOTE_CODE=0"
+        ),
+        evidence="模力方舟实测（2026-08-07）：GLM-4-9B-GPTQ-Int4 加载报 ValueError，加 --trust-remote-code 后正常",
+    ),
+    KnowledgeEntry(
+        id="MISC-004",
+        title="量化版模型缺 chat_template（transformers 4.44+ 报错）",
+        severity=SEVERITY_WARNING,
+        patterns=[
+            r"default chat template is no longer allowed",
+            r"must provide a chat template",
+            r"ChatTemplateResolutionError",
+        ],
+        diagnosis=(
+            "社区量化版模型（如 model-scope 的 GLM-GPTQ-Int4）tokenizer 未定义 chat_template，"
+            "transformers 4.44+ 禁止使用默认模板导致 chat 请求失败。"
+        ),
+        fix=(
+            "从官方仓库下载 tokenizer_config.json 覆盖本地模型目录同名文件：\n"
+            "huggingface-cli download zai-org/glm-4-9b-chat-hf tokenizer_config.json --local-dir /tmp/glm_tok\n"
+            "cp /tmp/glm_tok/tokenizer_config.json <模型目录>/"
+        ),
+        evidence="模力方舟实测（2026-08-07）：GLM-4-9B-GPTQ-Int4 bench 全部失败（ChatTemplateResolutionError），覆盖官方 tokenizer_config.json 后 100% 成功",
+    ),
+    KnowledgeEntry(
+        id="MEM-003",
+        title="KV cache 不足（大模型 max_model_len 过长）",
+        severity=SEVERITY_WARNING,
+        patterns=[
+            r"KV cache is needed.*larger than the available",
+            r"estimated maximum model length",
+            r"_check_enough_kv_cache_memory",
+        ],
+        diagnosis=(
+            "模型权重占用大部分显存后，剩余显存不足以支撑 max_model_len 对应的 KV cache。"
+            "实测：14B-INT4 权重约 11G，KV cache 仅剩 1.08G（需 1.5G@8192）。"
+        ),
+        fix=(
+            "1. 降低 --max-model-len（8192 → 4096，实测 14B-INT4 可行）\n"
+            "2. 或降低 --gpu-memory-utilization 反而更糟（留给 KV 的空间更少）→ 应适度提高或改小模型\n"
+            "3. 或换量化程度更高的模型（INT4 → INT2/GGUF）"
+        ),
+        evidence="模力方舟实测（2026-08-07）：14B-INT4 @ max_len 8192 报 KV cache 不足，降至 4096 成功部署",
+    ),
     # ---- 其他 ----
     KnowledgeEntry(
         id="MISC-001",

@@ -46,6 +46,32 @@ class TestDiagnose:
         ids = [r.entry.id for r in results]
         assert "MEM-002" in ids
 
+    def test_trust_remote_code(self):
+        log = (
+            "ValueError: The repository /models/glm-4-9b contains custom code which "
+            "must be executed to correctly load the model. Please pass the argument "
+            "trust_remote_code=True"
+        )
+        ids = [r.entry.id for r in diagnose(log)]
+        assert "MISC-003" in ids
+
+    def test_chat_template_missing(self):
+        log = (
+            "ChatTemplateResolutionError: As of transformers v4.44, default chat "
+            "template is no longer allowed, so you must provide a chat template"
+        )
+        ids = [r.entry.id for r in diagnose(log)]
+        assert "MISC-004" in ids
+
+    def test_kv_cache_insufficient(self):
+        log = (
+            "ValueError: To serve at least one request with the models's max seq len "
+            "(8192), (1.5 GiB KV cache is needed, which is larger than the available "
+            "KV cache memory (1.08 GiB)."
+        )
+        ids = [r.entry.id for r in diagnose(log)]
+        assert "MEM-003" in ids
+
     def test_pip_override(self):
         results = diagnose("user ran: pip install torch --upgrade")
         assert "DEP-001" in [r.entry.id for r in results]
