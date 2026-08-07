@@ -87,14 +87,6 @@ pip install -e ".[dev]"
 pytest        # 40 tests
 ```
 
-## 路线图
-
-- M1：CLI 骨架 + `init` 环境体检 ✅
-- M2：`deploy` 一键部署 + Qwen2.5 实测 ✅
-- M3：`bench` 性能测试 + 首份 benchmark 报告 ✅
-- M4：`doctor` 排障知识库（规则引擎）✅
-- M5：开源发布 + demo 视频（进行中）
-
 ## License
 
 [Apache-2.0](LICENSE)
