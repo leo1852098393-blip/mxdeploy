@@ -8,6 +8,8 @@
 > 国产 GPU（MetaX 曦云 C500 / MXMACA 生态）一键部署 + 评测 + AI 排障 CLI。
 > 一条命令把模型跑起来，出 benchmark 报告，报错自动诊断。
 
+📖 **新手教程**：[docs/TUTORIAL.md](https://github.com/leo1852098393-blip/mxdeploy/blob/master/docs/TUTORIAL.md) — 从安装到实战，10 分钟上手。
+
 ## Features
 
 - **一键部署**：精度检查 → vLLM 配置生成 → 服务拉起 → 健康检查，全程自动化，FP8 等不支持的模型自动拦截
