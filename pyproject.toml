@@ -13,7 +13,6 @@ authors = [{ name = "Leo77", email = "leo1852098393@gmail.com" }]
 keywords = ["gpu", "metax", "mxmaca", "deploy", "vllm", "benchmark", "国产算力"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: POSIX :: Linux",
     "Topic :: System :: Hardware",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
