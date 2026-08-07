@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![PyPI](https://img.shields.io/pypi/v/mxdeploy?color=%2334D058&label=pypi%20package)](https://pypi.org/project/mxdeploy/)
 [![Platform](https://img.shields.io/badge/platform-Linux-blue)]()
 
 > 国产 GPU（MetaX 曦云 C500 / MXMACA 生态）一键部署 + 评测 + AI 排障 CLI。
