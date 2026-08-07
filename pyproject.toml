@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "国产 GPU (MetaX 曦云 C500 / MXMACA) 一键部署 + 评测 + AI 排障 CLI 工具"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "Leo77", email = "leo1852098393@gmail.com" }]
 keywords = ["gpu", "metax", "mxmaca", "deploy", "vllm", "benchmark", "国产算力"]
 classifiers = [
