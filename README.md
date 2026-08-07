@@ -1,6 +1,6 @@
 # mxdeploy
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](https://github.com/leo1852098393-blip/mxdeploy/blob/master/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![PyPI](https://img.shields.io/pypi/v/mxdeploy?color=%2334D058&label=pypi%20package)](https://pypi.org/project/mxdeploy/)
 [![Platform](https://img.shields.io/badge/platform-Linux-blue)]()
@@ -62,7 +62,7 @@ Qwen2.5-3B-Instruct 全精度 FP16 @ 模力方舟曦云 C500 16G vGPU：
 | 成功率 | 100% |
 | 显存占用 | 15361 MB / 16G |
 
-完整报告见 [docs/BENCHMARK_3B_C500_16G.md](docs/BENCHMARK_3B_C500_16G.md)。
+完整报告见 [docs/BENCHMARK_3B_C500_16G.md](https://github.com/leo1852098393-blip/mxdeploy/blob/master/docs/BENCHMARK_3B_C500_16G.md)。
 
 ## 排障知识库
 
@@ -95,4 +95,4 @@ pytest        # 40 tests
 
 ## License
 
-[Apache-2.0](LICENSE)
+[Apache-2.0](https://github.com/leo1852098393-blip/mxdeploy/blob/master/LICENSE)
