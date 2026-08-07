@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 (2026-08-07) — v0.2 里程碑
+
+- **deploy 参数透传**：新增 --enforce-eager / --trust-remote-code / --quantization / --extra-args（14B/GLM 等特殊模型一键部署）
+- **init 显存检测修正**：改用 PyTorch 可见显存（vGPU 实例实际配额，16G 实例不再误报物理 64G）
+- **默认显存利用率 0.9 → 0.8**：规避 torch.compile autotune OOM（MEM-002）
+- **OOM 自动降级重试**：部署遇显存不足自动降 util 重试（最多 3 次）
+- **量化自动识别完善**：GPTQ-Int4 模型自动加 --quantization gptq
+- **bench fallback**：chat 接口失败自动切换 completions 接口
+- **文本去公司名**：MetaX/沐曦/模力方舟 → 中性表述（软著合规）
+- 52 项测试全绿
+
 ## 0.1.3 (2026-08-07)
 
 - 新增知识库规则：MISC-003（trust-remote-code）、MISC-004（chat_template 缺失）、MEM-003（KV cache 不足）
