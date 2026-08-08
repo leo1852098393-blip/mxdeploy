@@ -43,7 +43,7 @@ class EnvReport:
 
     @property
     def is_metax_env(self) -> bool:
-        return "C500" in self.gpu_model or "曦云" in self.gpu_model or "MetaX" in self.gpu_model
+        return "C500" in self.gpu_model or "曦云" in self.gpu_model or "MXC500" in self.gpu_model
 
     def summary(self) -> dict:
         return {
@@ -101,11 +101,11 @@ def check_mx_smi() -> tuple[str, int, int, str]:
     if code != 0:
         return "未知", 0, 0, f"mx-smi 执行失败 (rc={code}): {out[:200]}"
     # 解析 GPU 型号与数量
-    model = "MetaX GPU"
+    model = "国产 GPU"
     count = 0
     for line in out.splitlines():
         if "C500" in line or "MXC500" in line or "曦云" in line:
-            if "MetaX" in line or "C500" in line or "MXC500" in line:
+            if "C500" in line or "MXC500" in line or "曦云" in line:
                 model = "曦云 C500"
             count += 1
     if count == 0:
