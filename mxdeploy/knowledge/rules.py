@@ -215,6 +215,29 @@ KNOWLEDGE_BASE: list[KnowledgeEntry] = [
         evidence="国产算力平台实测（2026-08-07）：GLM-4-9B-GPTQ-Int4 加载报 ValueError，加 --trust-remote-code 后正常",
     ),
     KnowledgeEntry(
+        id="MISC-005",
+        title="GPTQ fused 层分片精度不一致（vllm_metax 0.17 compile 模式检查 bug）",
+        severity=SEVERITY_WARNING,
+        patterns=[
+            r"Detected some but not all shards of .* are quantized",
+            r"All shards of fused layers to have the same precision",
+            r"not all shards.*quantized",
+            r"fused layers.*same precision",
+        ],
+        diagnosis=(
+            "GPTQ 量化模型（如 Qwen2.5-14B-GPTQ-Int4）在 torch.compile 模式下加载时，"
+            "vllm_metax 0.17.0 的 fused layer 分片精度检查过严，"
+            "把部分量化的 gate_up_proj 分片误判为精度不一致。"
+            "干净重新下载模型后依然复现，确认非下载损坏，是框架检查 bug。"
+        ),
+        fix=(
+            "启动参数加 --enforce-eager 绕过 compile 模式即可（16G/64G 卡均验证成功）：\n"
+            "mxdeploy deploy --model <模型> --enforce-eager\n"
+            "注意：eager 模式吞吐与整卡/分片无关（同一物理卡计算力），性能损失主要在长序列场景"
+        ),
+        evidence="国产算力平台 64G 整卡实测（2026-08-07）：Qwen2.5-14B-GPTQ-Int4 compile 报 ValueError，--enforce-eager 后 46.57 t/s 正常（16G vGPU 46.58 t/s 一致）",
+    ),
+    KnowledgeEntry(
         id="MISC-004",
         title="量化版模型缺 chat_template（transformers 4.44+ 报错）",
         severity=SEVERITY_WARNING,

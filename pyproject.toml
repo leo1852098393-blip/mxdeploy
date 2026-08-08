@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mxdeploy"
-version = "0.2.0"
+version = "0.2.1"
 description = "国产 GPU (MetaX 曦云 C500 / MXMACA) 一键部署 + 评测 + AI 排障 CLI 工具"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -64,6 +64,17 @@ mxdeploy doctor deploy.log
 
 完整矩阵报告见 [docs/BENCHMARK_MATRIX_C500_16G.md](https://github.com/leo1852098393-blip/mxdeploy/blob/master/docs/BENCHMARK_MATRIX_C500_16G.md)。
 
+### 64G 整卡（模力方舟曦云 C500 64G，PyTorch 可见 63.59 GiB，同参数）
+
+| 模型 | 精度 | 模式 | 吞吐 (t/s) | TTFT (ms) | TPOT (ms) | 成功率 |
+|------|------|------|-----------|-----------|-----------|--------|
+| Qwen2.5-7B-Instruct | FP16 | compile | **101.78** | 478.56 | 8.17 | 100% |
+| GLM-4-9B-chat | FP16 | compile | **79.84** | 54.23 | 12.22 | 100% |
+| Qwen2.5-14B-Instruct-GPTQ-Int4 | INT4 | eager | **46.57** | 1408.63 | 14.15 | 100% |
+
+> 关键洞察：14B-INT4 eager 在 64G 整卡 46.57 t/s ≈ 16G vGPU 的 46.58 t/s——同一物理卡计算力，vGPU 分片不影响 eager 吞吐；64G 的优势是能跑 compile 模式和更大模型。
+> 完整报告见 [docs/BENCHMARK_64G_C500.md](https://github.com/leo1852098393-blip/mxdeploy/blob/master/docs/BENCHMARK_64G_C500.md)。
+
 ## 排障知识库
 
 全部规则来自真实部署实测，命中即给出修复方案：
@@ -72,12 +83,14 @@ mxdeploy doctor deploy.log
 |------|------|
 | NET-001 | huggingface.co 超时 → 自动提示 HF_ENDPOINT 镜像 |
 | ENV-001 | 非交互 SSH 缺 MACA_PATH → vLLM import 崩溃 |
-| PIP-001 | pip 覆盖官方 torch(+metax) 适配版 |
-| FP8-001 | 曦云 C500 不支持 FP8 → 提示换 FP16/INT8 |
-| OOM-001 | 显存不足 → 给出量化/换卡建议 |
+| DEP-001 | pip 覆盖官方 torch(+metax) 适配版 |
+| PREC-001 | 曦云 C500 不支持 FP8 → 提示换 FP16/INT8 |
+| MEM-001 | 显存不足 → 给出量化/换卡建议 |
 | MEM-002 | util 0.9 + torch.compile autotune OOM → 降 0.8 |
+| MEM-003 | KV cache 不足 → 降 max-model-len（实测 14B-INT4 8192→4096） |
 | MISC-003 | 模型需 trust-remote-code → 加 `--trust-remote-code` |
 | MISC-004 | 量化版缺 chat_template → 从官方仓库补齐 tokenizer |
+| MISC-005 | GPTQ fused 层分片精度检查 bug（compile 模式）→ 加 `--enforce-eager` |
 | ... | 更多规则见 `mxdeploy doctor --list` |
 
 ## 兼容性
@@ -93,7 +106,7 @@ mxdeploy doctor deploy.log
 git clone https://github.com/leo1852098393-blip/mxdeploy
 cd mxdeploy
 pip install -e ".[dev]"
-pytest        # 40 tests
+pytest        # 53 tests
 ```
 
 ## License

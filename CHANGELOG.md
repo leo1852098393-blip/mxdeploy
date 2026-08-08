@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 (2026-08-08) — 64G 整卡实测 + MISC-005
+
+- **新规则 MISC-005**：GPTQ fused 层分片精度检查 bug（vllm_metax 0.17 compile 模式），提示 `--enforce-eager` 绕过（16G/64G 均验证）
+- **64G 整卡实测报告**：docs/BENCHMARK_64G_C500.md（7B FP16 101.78 t/s / GLM-9B FP16 79.84 t/s / 14B-INT4 46.57 t/s）
+- **README 更新**：新增 64G 实测小节 + 知识库表补齐/修正规则 ID
+- **脚本归档**：64G 测试脚本归入 scripts/64g/
+- 53 项测试全绿
+
 ## 0.2.0 (2026-08-07) — v0.2 里程碑
 
 - **deploy 参数透传**：新增 --enforce-eager / --trust-remote-code / --quantization / --extra-args（14B/GLM 等特殊模型一键部署）

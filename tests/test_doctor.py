@@ -84,6 +84,15 @@ class TestDiagnose:
         results = diagnose("everything looks fine here, no known error patterns")
         assert results == []
 
+    def test_gptq_fused_shards(self):
+        log = (
+            "ValueError: Detected some but not all shards of "
+            "model.layers.44.mlp.gate_up_proj are quantized. "
+            "All shards of fused layers to have the same precision."
+        )
+        ids = [r.entry.id for r in diagnose(log)]
+        assert "MISC-005" in ids
+
     def test_port_conflict(self):
         results = diagnose("OSError: [Errno 98] Address already in use")
         assert "MISC-002" in [r.entry.id for r in results]
